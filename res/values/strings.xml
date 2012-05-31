@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Posroid</string>
+    
+    <string name="newsletter">Newsletter</string>
+    <string name="announcement">Announcement</string>
+    <string name="notice">Academic Notice</string>
+    
+    <string name="calendar">Postech Calendar</string>
+    <string name="calendar_title">%1$tB %1$tY</string>
+    <string name="calendar_item">%1$tB %1$te</string>
+    <string name="loading">Loading&#8230;</string>
+    
+    <string name="cafeteria">Cafeteria Menu</string>
+    <string name="empty">No entries in this list</string>
+    <string name="cafeteria_group_format">%1$ta %1$tb %1$td</string>
+    <string-array name="cafeteria_kind">
+        <item >Freedom Breakfast</item>
+        <item >Freedom Lunch</item>
+        <item >Freedom Supper</item>
+        <item >Wisdom</item>
+    </string-array>
+    <string name="corner">Corner</string>
+    <string name="kcal">kcal</string>
+    
+    <string name="delivery">Delivery Menu</string>
+    <string name="favorite">Favorite</string>
+    <string name="call">Make a call</string>
+    <string name="overview">Overview</string>
+    <string name="delivery_menu">Menu</string>
+    <string name="picture_attached">Picture is attached</string>
+    <string name="note">There is a note about it</string>
+    
+    <string name="welfare">Welfare Facilities</string>
+    <string name="open">Open</string>
+    <string name="closed">Closed</string>
+    
+    <string name="preferences">Preferences</string>
+    <string name="help">How to use</string>
+    <string name="quit">Exit</string>
+    
+    <string name="general">General</string>
+    <string name="default_tab">Default tab</string>
+    <string name="default_tab_summary">Tab which is shown when Posroid is launched.</string>
+    <string-array name="default_tab_entries">
+        <item >Newsletter</item>
+        <item >Postech Calendar</item>
+        <item >Cafeteria Menu</item>
+        <item >Delivery Menu</item>
+        <item >Welfare Facilities</item>
+    </string-array>
+    <string-array name="default_tab_values">
+        <item >0</item>
+        <item >1</item>
+        <item >2</item>
+        <item >3</item>
+        <item >4</item>
+    </string-array>
+    <string name="newsletter_default_board">Default board</string>
+    <string name="newsletter_default_board_summary">Bulletin board which is shown when Newspaper tab is activated.</string>
+    <string-array name="newsletter_default_board_entries">
+        <item >Announcement</item>
+        <item >Academic Notice</item>
+    </string-array>
+    <string-array name="newsletter_default_board_values">
+        <item >131</item>
+        <item >161</item>
+    </string-array>
+    <string name="povis_id">POVIS ID</string>
+    <string name="povis_pwd">POVIS Password</string>
+    <string name="povis_id_summary">POVIS ID which is used for auto-login</string>
+    <string name="povis_pwd_summary">Password of POVIS ID which is used for auto-login. It saved with encryption, but it is not fully safe. Be careful!</string>
+    <string name="clear">Clear cached data</string>
+    <string name="clear_summary">Delete all cached Posroid data. Force to refresh all data.</string>
+    <string name="latest">Latest version:&#xA0;</string>
+    <string name="about">About Posroid</string>
+    <string name="current_version">Current Version:&#xA0;</string>
+    <string name="clear_finished">Cache cleaning finished.</string>
+    
+</resources>

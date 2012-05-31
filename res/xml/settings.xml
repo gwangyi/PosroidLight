@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+    
+    <PreferenceCategory android:title="@string/general">
+        <ListPreference android:entryValues="@array/default_tab_values" android:title="@string/default_tab" android:key="default_tab" android:entries="@array/default_tab_entries" android:summary="@string/default_tab_summary"/>
+    </PreferenceCategory>
+    <PreferenceCategory android:title="POVIS"><ListPreference android:entryValues="@array/newsletter_default_board_values" android:title="@string/newsletter_default_board" android:key="newsletter_default_board" android:summary="@string/newsletter_default_board_summary" android:entries="@array/newsletter_default_board_entries" />
+        <EditTextPreference android:title="@string/povis_id" android:summary="@string/povis_id_summary" android:key="povis_id" />
+        <EditTextPreference android:title="@string/povis_pwd" android:summary="@string/povis_pwd_summary" android:key="povis_pwd_raw" android:password="true" />
+    </PreferenceCategory>
+    <PreferenceCategory android:title="@string/app_name">
+        <Preference android:key="clear" android:summary="@string/clear_summary" android:title="@string/clear"/><Preference android:title="@string/latest" android:summary="@string/current_version" android:key="latest"/>
+        <Preference android:title="@string/about" android:key="about"/>
+        
+    </PreferenceCategory>
+
+</PreferenceScreen>
