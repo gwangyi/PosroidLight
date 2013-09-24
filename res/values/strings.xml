@@ -28,7 +28,7 @@
     <string name="favorite">Favorite</string>
     <string name="call">Make a call</string>
     <string name="overview">Overview</string>
-    <string name="delivery_menu">Menu</string>
+    <string name="delivery_menu">Detail</string>
     <string name="picture_attached">Picture is attached</string>
     <string name="note">There is a note about it</string>
     
@@ -77,5 +77,11 @@
     <string name="about">About Posroid</string>
     <string name="current_version">Current Version:&#xA0;</string>
     <string name="clear_finished">Cache cleaning finished.</string>
+    <string name="discount">Discount</string>
+    <string name="closed_message">Closed: %s</string>
+    <string name="tracking_on">Show where I am</string>
+    <string name="tracking_off">Hide where I am</string>
+    
+    <string name="cancelled">Cancelled.</string>
     
 </resources>

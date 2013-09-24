@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <string name="app_name">포스로이드</string>
+    
     <string name="newsletter">교내회보</string>
     <string name="announcement">교내회보</string>
     <string name="notice">학사공지</string>
@@ -20,12 +22,13 @@
         <item >교직원식당</item>
     </string-array>
     <string name="corner">코너</string>
+    <string name="kcal">kcal</string>
     
     <string name="delivery">배달업체</string>
     <string name="favorite">즐겨찾기</string>
     <string name="call">전화 걸기</string>
     <string name="overview">요약</string>
-    <string name="delivery_menu">메뉴</string>
+    <string name="delivery_menu">상세</string>
     <string name="picture_attached">사진 첨부</string>
     <string name="note">비고 있음</string>
     
@@ -47,11 +50,22 @@
         <item >배달업체</item>
         <item >복지시설</item>
     </string-array>
+    <string-array name="default_tab_values">
+        <item >0</item>
+        <item >1</item>
+        <item >2</item>
+        <item >3</item>
+        <item >4</item>
+    </string-array>
     <string name="newsletter_default_board">기본 게시판</string>
     <string name="newsletter_default_board_summary">교내회보 기능을 열었을 때 가장 먼저 나오는 게시판을 선택합니다.</string>
     <string-array name="newsletter_default_board_entries">
         <item >교내회보</item>
         <item >학사공지</item>
+    </string-array>
+    <string-array name="newsletter_default_board_values">
+        <item >131</item>
+        <item >161</item>
     </string-array>
     <string name="povis_id">POVIS ID</string>
     <string name="povis_pwd">POVIS 비밀번호</string>
@@ -63,5 +77,11 @@
     <string name="about">Posroid란?</string>
     <string name="current_version">현재 버전:&#xA0;</string>
     <string name="clear_finished">캐시 파일을 모두 지웠습니다.</string>
+    <string name="discount">할인업체</string>
+    <string name="closed_message">휴무일: %s</string>
+    <string name="tracking_on">내 위치 보기</string>
+    <string name="tracking_off">내 위치 숨기기</string>
     
+    <string name="cancelled">취소되었습니다.</string>
+
 </resources>

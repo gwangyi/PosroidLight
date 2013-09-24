@@ -13,9 +13,9 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentActivity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -25,6 +25,7 @@ import android.widget.ExpandableListView;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 import kr.gwangyi.fragments.ExpandableListFragment;
 import kr.gwangyi.fragments.ProgressDialogFragment;
 import kr.gwangyi.posroid.light.R;
@@ -44,16 +45,17 @@ public class CafeteriaFragment extends ExpandableListFragment
 			public boolean category;
 			public String name;
 			public int month, day;
+			public int tag;
 			
-			public GroupItem(boolean category, String name, int month, int day)
+			public GroupItem(boolean category, String name, int month, int day, int tag)
 			{
-				this.category = category; this.name = name; this.month = month; this.day = day;
+				this.category = category; this.name = name; this.month = month; this.day = day; this.tag = tag;
 			}
-			
+/*			
 			public GroupItem(boolean category, String name)
 			{
 				this.category = category; this.name = name; this.month = 0; this.day = 0;
-			}
+			}*/
 		}
 		private class ChildItem
 		{
@@ -69,219 +71,257 @@ public class CafeteriaFragment extends ExpandableListFragment
 		
 		private List<GroupItem> group = new ArrayList<GroupItem>();
 		private List<List<ChildItem>> children = new ArrayList<List<ChildItem>>();
+		
+		private class AdapterTask extends AsyncTask<Void, Void, Void> implements DialogInterface.OnCancelListener
+		{
+			private ProgressDialogFragment dlg;
+			private final Adapter adapter = Adapter.this;
+			
+			@Override
+			protected Void doInBackground(Void... params)
+			{
+				Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul"));
+				try
+				{
+					XmlPullParser parser = XmlUtility.makeInstanceFromUrl(adapter.context, new URL(FREEDOM_URL));
+					
+					int parserEvent = parser.getEventType();
+					HashMap<String, List<ChildItem>> map = new HashMap<String, List<ChildItem>>();
+					List<ChildItem> children = null;
+					ChildItem child = null;
+					int month = 0, day = 0;
+					while(parserEvent != XmlPullParser.END_DOCUMENT)
+					{
+						switch(parserEvent)
+						{
+						case XmlPullParser.START_TAG:
+							if(parser.getName().equals("menu"))
+							{
+								String a[] = parser.getAttributeValue(null, "date").split("/");
+								month = Integer.parseInt(a[0]) - 1; day = Integer.parseInt(a[1]);
+								cal.set(Calendar.MONTH, month);
+								cal.set(Calendar.DAY_OF_MONTH, day);
+								adapter.group.add(new GroupItem(true, adapter.context.getString(R.string.cafeteria_group_format, cal), month, day, 0));
+								adapter.children.add(new ArrayList<ChildItem>());
+								/*if(now.get(Calendar.DAY_OF_MONTH) == day)
+								{
+									today_group = adapter.group.size() - 1;
+								}*/
+								map.clear();
+							}
+							else if(parser.getName().equals("item"))
+							{
+								String kind = parser.getAttributeValue(null, "kind");
+								children = map.get(kind);
+								if(children == null)
+								{
+									GroupItem item = null;
+									if("breakfast".equals(kind))
+										item = new GroupItem(false, adapter.context.getResources().getStringArray(R.array.cafeteria_kind)[0], month, day, 0);
+									else if("lunch".equals(kind))
+										item = new GroupItem(false, adapter.context.getResources().getStringArray(R.array.cafeteria_kind)[1], month, day, 1);
+									else if("supper".equals(kind))
+										item = new GroupItem(false, adapter.context.getResources().getStringArray(R.array.cafeteria_kind)[2], month, day, 2);
+									adapter.group.add(item);
+									children = new ArrayList<ChildItem>();
+									adapter.children.add(children);
+									map.put(kind, children);
+								}
+								child = new ChildItem();
+								String corner = parser.getAttributeValue(null, "corner"); 
+								if("A".equals(corner))
+									child.corner = 0;
+								else if("B".equals(corner))
+									child.corner = 1;
+								else if("C".equals(corner))
+									child.corner = 2;
+								else if("D".equals(corner))
+									child.corner = 3;
+								child.calory = Integer.parseInt(parser.getAttributeValue(null, "calory"));
+								children.add(child);
+							}
+							break;
+						case XmlPullParser.TEXT:
+							if(child != null)
+								child.detail += parser.getText();
+							break;
+						case XmlPullParser.END_TAG:
+							if(child != null)
+							{
+								String [] detail = child.detail.split("\n");
+								int i = Locale.getDefault().equals(Locale.KOREAN) ? 0 : 1;
+								child.detail = "";
+								for(; i < detail.length; i += 2)
+								{
+									detail[i] = detail[i].trim();
+									if(detail[i].length() != 0)
+										child.detail += "\n" + detail[i];
+								}
+								if(child.detail.length() != 0)
+									child.detail = child.detail.substring(1);
+								child = null;
+							}
+							break;
+						}
+						parserEvent = parser.next();
+					}
+				}
+				catch (IOException e)
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				catch (XmlPullParserException e)
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+				try
+				{
+					XmlPullParser parser = XmlUtility.makeInstanceFromUrl(adapter.context, new URL(WISDOM_URL));
+					
+					int parserEvent = parser.getEventType();
+					List<ChildItem> children = null;
+					ChildItem child = null;
+					int month = 0, day = 0;
+					while(parserEvent != XmlPullParser.END_DOCUMENT)
+					{
+						switch(parserEvent)
+						{
+						case XmlPullParser.START_TAG:
+							if(parser.getName().equals("menu"))
+							{
+								String a[] = parser.getAttributeValue(null, "date").split("/");
+								month = Integer.parseInt(a[0]) - 1; day = Integer.parseInt(a[1]);
+								children = null;
+							}
+							else if(parser.getName().equals("item"))
+							{
+								int x = month * 100 + day;
+								int i = 0;
+								boolean check = false;
+								for(i = 0; i < group.size(); i++)
+								{
+									GroupItem g = group.get(i);
+									if(g.month * 100 + g.day == x)
+										check = true;
+									else if(check)
+										break;
+								}
+								child = null;
+								if(i < group.size() || check)
+								{
+									//String kind = parser.getAttributeValue(null, "kind");
+									if(children == null)
+									{
+										GroupItem item = null;
+										item = new GroupItem(false, adapter.context.getResources().getStringArray(R.array.cafeteria_kind)[3], month, day, 3);
+										adapter.group.add(i, item);
+										children = new ArrayList<ChildItem>();
+										adapter.children.add(i, children);
+									}
+									child = new ChildItem();
+									child.corner = 4;
+									child.calory = Integer.parseInt(parser.getAttributeValue(null, "calory"));
+									children.add(child);
+								}
+							}
+							break;
+						case XmlPullParser.TEXT:
+							if(child != null)
+								child.detail += parser.getText();
+							break;
+						case XmlPullParser.END_TAG:
+							if(child != null)
+							{
+								String [] detail = child.detail.split("\n");
+								int i = Locale.getDefault().equals(Locale.KOREAN) ? 0 : 1;
+								child.detail = "";
+								for(; i < detail.length; i += 2)
+								{
+									detail[i] = detail[i].trim();
+									if(detail[i].length() != 0)
+										child.detail += "\n" + detail[i];
+								}
+								if(child.detail.length() != 0)
+									child.detail = child.detail.substring(1);
+								child = null;
+							}
+							break;
+						}
+						parserEvent = parser.next();
+					}
+				}
+				catch (IOException e)
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				catch (XmlPullParserException e)
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				return null;
+			}
+			
+			@Override
+			protected void onPreExecute()
+			{
+				dlg = ProgressDialogFragment.newInstance(null, context.getString(R.string.loading));
+				dlg.show(context.getSupportFragmentManager(), "dialog");
+				dlg.setOnCancelListener(this);
+			}
+			
+			protected void onPostExecute(Void result)
+			{
+				Calendar now = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul"));
+				dlg.dismissAllowingStateLoss();
+				boolean ok = false;
+				for(int i = 0; i < adapter.group.size(); i++)
+				{
+					GroupItem group = adapter.group.get(i);
+					if(group.day == now.get(Calendar.DAY_OF_MONTH) && !group.category)
+					{
+						if((now.get(Calendar.HOUR_OF_DAY) * 100 + now.get(Calendar.MINUTE) < 930 && group.tag == 0) ||
+							(now.get(Calendar.HOUR_OF_DAY) * 100 + now.get(Calendar.MINUTE) < 1330 && group.tag == 1) ||
+							(now.get(Calendar.HOUR_OF_DAY) * 100 + now.get(Calendar.MINUTE) < 1900 && group.tag == 2))
+						{
+							getListView().expandGroup(i);
+							getListView().smoothScrollToPosition(getListView().getFlatListPosition(ExpandableListView.getPackedPositionForGroup(i + 1)) - 1);
+							ok = true;
+							break;
+						}
+					}
+				}
+				if(!ok)
+				{
+					for(int i = 0; i < adapter.group.size(); i++)
+					{
+						GroupItem group = adapter.group.get(i);
+						if(group.day == now.get(Calendar.DAY_OF_MONTH) && group.category)
+						{
+							getListView().smoothScrollToPosition(getListView().getFlatListPosition(ExpandableListView.getPackedPositionForGroup(i + 5)) - 1);
+						}
+					}
+				}
+				notifyDataSetChanged();
+			}
+			
+			@Override
+			public void onCancel(DialogInterface dialog)
+			{
+				this.cancel(true);
+				Toast.makeText(getActivity(), R.string.cancelled, Toast.LENGTH_SHORT).show();
+			}
+		}
 
 		public Adapter()
 		{
 			this.context = getActivity();
 			
-			final DialogFragment dlg = ProgressDialogFragment.newInstance(null, context.getString(R.string.loading));
-			dlg.show(context.getSupportFragmentManager(), "dialog");
-			
-			new AsyncTask<Void, Void, Void>()
-			{
-				private final Adapter adapter = Adapter.this;
-				private int today_group = -1;
-				@Override
-				protected Void doInBackground(Void... params)
-				{
-					Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul")),
-							now = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul"));
-					try
-					{
-						XmlPullParser parser = XmlUtility.makeInstanceFromUrl(adapter.context, new URL(FREEDOM_URL));
-						
-						int parserEvent = parser.getEventType();
-						HashMap<String, List<ChildItem>> map = new HashMap<String, List<ChildItem>>();
-						List<ChildItem> children = null;
-						ChildItem child = null;
-						int month = 0, day = 0;
-						while(parserEvent != XmlPullParser.END_DOCUMENT)
-						{
-							switch(parserEvent)
-							{
-							case XmlPullParser.START_TAG:
-								if(parser.getName().equals("menu"))
-								{
-									String a[] = parser.getAttributeValue(null, "date").split("/");
-									month = Integer.parseInt(a[0]) - 1; day = Integer.parseInt(a[1]);
-									cal.set(Calendar.MONTH, month);
-									cal.set(Calendar.DAY_OF_MONTH, day);
-									adapter.group.add(new GroupItem(true, adapter.context.getString(R.string.cafeteria_group_format, cal), month, day));
-									adapter.children.add(new ArrayList<ChildItem>());
-									if(now.get(Calendar.DAY_OF_MONTH) == day)
-									{
-										today_group = adapter.group.size() - 1;
-									}
-									map.clear();
-								}
-								else if(parser.getName().equals("item"))
-								{
-									String kind = parser.getAttributeValue(null, "kind");
-									children = map.get(kind);
-									if(children == null)
-									{
-										GroupItem item = null;
-										if("breakfast".equals(kind))
-											item = new GroupItem(false, adapter.context.getResources().getStringArray(R.array.cafeteria_kind)[0], month, day);
-										else if("lunch".equals(kind))
-											item = new GroupItem(false, adapter.context.getResources().getStringArray(R.array.cafeteria_kind)[1], month, day);
-										else if("supper".equals(kind))
-											item = new GroupItem(false, adapter.context.getResources().getStringArray(R.array.cafeteria_kind)[2], month, day);
-										adapter.group.add(item);
-										children = new ArrayList<ChildItem>();
-										adapter.children.add(children);
-										map.put(kind, children);
-									}
-									child = new ChildItem();
-									String corner = parser.getAttributeValue(null, "corner"); 
-									if("A".equals(corner))
-										child.corner = 0;
-									else if("B".equals(corner))
-										child.corner = 1;
-									else if("C".equals(corner))
-										child.corner = 2;
-									else if("D".equals(corner))
-										child.corner = 3;
-									child.calory = Integer.parseInt(parser.getAttributeValue(null, "calory"));
-									children.add(child);
-								}
-								break;
-							case XmlPullParser.TEXT:
-								if(child != null)
-									child.detail += parser.getText();
-								break;
-							case XmlPullParser.END_TAG:
-								if(child != null)
-								{
-									String [] detail = child.detail.split("\n");
-									int i = Locale.getDefault().equals(Locale.KOREAN) ? 0 : 1;
-									child.detail = "";
-									for(; i < detail.length; i += 2)
-									{
-										detail[i] = detail[i].trim();
-										if(detail[i].length() != 0)
-											child.detail += "\n" + detail[i];
-									}
-									if(child.detail.length() != 0)
-										child.detail = child.detail.substring(1);
-									child = null;
-								}
-								break;
-							}
-							parserEvent = parser.next();
-						}
-					}
-					catch (IOException e)
-					{
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					catch (XmlPullParserException e)
-					{
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					
-					try
-					{
-						XmlPullParser parser = XmlUtility.makeInstanceFromUrl(adapter.context, new URL(WISDOM_URL));
-						
-						int parserEvent = parser.getEventType();
-						List<ChildItem> children = null;
-						ChildItem child = null;
-						int month = 0, day = 0;
-						while(parserEvent != XmlPullParser.END_DOCUMENT)
-						{
-							switch(parserEvent)
-							{
-							case XmlPullParser.START_TAG:
-								if(parser.getName().equals("menu"))
-								{
-									String a[] = parser.getAttributeValue(null, "date").split("/");
-									month = Integer.parseInt(a[0]) - 1; day = Integer.parseInt(a[1]);
-									children = null;
-								}
-								else if(parser.getName().equals("item"))
-								{
-									int x = month * 100 + day;
-									int i = 0;
-									boolean check = false;
-									for(i = 0; i < group.size(); i++)
-									{
-										GroupItem g = group.get(i);
-										if(g.month * 100 + g.day == x)
-											check = true;
-										else if(check)
-											break;
-									}
-									child = null;
-									if(i < group.size() || check)
-									{
-										//String kind = parser.getAttributeValue(null, "kind");
-										if(children == null)
-										{
-											GroupItem item = null;
-											item = new GroupItem(false, adapter.context.getResources().getStringArray(R.array.cafeteria_kind)[3]);
-											adapter.group.add(i, item);
-											children = new ArrayList<ChildItem>();
-											adapter.children.add(i, children);
-										}
-										child = new ChildItem();
-										child.corner = 4;
-										child.calory = Integer.parseInt(parser.getAttributeValue(null, "calory"));
-										children.add(child);
-									}
-								}
-								break;
-							case XmlPullParser.TEXT:
-								if(child != null)
-									child.detail += parser.getText();
-								break;
-							case XmlPullParser.END_TAG:
-								if(child != null)
-								{
-									String [] detail = child.detail.split("\n");
-									int i = Locale.getDefault().equals(Locale.KOREAN) ? 0 : 1;
-									child.detail = "";
-									for(; i < detail.length; i += 2)
-									{
-										detail[i] = detail[i].trim();
-										if(detail[i].length() != 0)
-											child.detail += "\n" + detail[i];
-									}
-									if(child.detail.length() != 0)
-										child.detail = child.detail.substring(1);
-									child = null;
-								}
-								break;
-							}
-							parserEvent = parser.next();
-						}
-					}
-					catch (IOException e)
-					{
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					catch (XmlPullParserException e)
-					{
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					return null;
-				}
-				
-				protected void onPostExecute(Void result)
-				{
-					dlg.dismiss();
-					if(today_group != -1)
-					{
-						getListView().expandGroup(today_group);
-						getListView().smoothScrollToPosition(getListView().getFlatListPosition(ExpandableListView.getPackedPositionForGroup(today_group)));
-					}
-					notifyDataSetChanged();
-				}
-			}.execute();
+			new AdapterTask().execute();
 		}
 
 		@Override

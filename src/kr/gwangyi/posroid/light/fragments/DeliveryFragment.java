@@ -14,13 +14,13 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentActivity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -29,6 +29,7 @@ import android.widget.AdapterView;
 import android.widget.BaseExpandableListAdapter;
 import android.widget.ExpandableListView;
 import android.widget.TextView;
+import android.widget.Toast;
 import kr.gwangyi.fragments.ExpandableListFragment;
 import kr.gwangyi.fragments.ProgressDialogFragment;
 import kr.gwangyi.posroid.light.R;
@@ -44,7 +45,7 @@ public class DeliveryFragment extends ExpandableListFragment
 		
 		private class Restaurant
 		{
-			public static final int OPEN = 0, CLOSED = 1, PREPARE = 2;
+			public static final int OPEN = 0, CLOSED = 1, PREPARE = 2, NOT_IN_SERVICE =- 1;
 			public String name = null;
 			public String id = null;
 			public List<String> phone = null;
@@ -59,103 +60,99 @@ public class DeliveryFragment extends ExpandableListFragment
 		private List<String> groups = new ArrayList<String>();
 		private List<List<Restaurant>> children = new ArrayList<List<Restaurant>>();
 		
-		public Adapter()
+		private class AdapterTask extends AsyncTask<Void, Void, Void> implements DialogInterface.OnCancelListener
 		{
-			this.context = getActivity();
+			private Adapter adapter = Adapter.this;
 			
-			SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
-			String [] favs = pref.getString("delivery_favorites", "").split(":");
-			for(String fav : favs)
-				favorites.add(fav);
+			private ProgressDialogFragment dlg;
 			
-			final DialogFragment dlg = ProgressDialogFragment.newInstance(null, context.getString(R.string.loading));
-			dlg.show(context.getSupportFragmentManager(), "dialog");
-			
-			new AsyncTask<Void, Void, Void>()
+			@Override
+			protected Void doInBackground(Void... params)
 			{
-				private Adapter adapter = Adapter.this;
+				adapter.groups.add(adapter.context.getString(R.string.favorite));
+				adapter.children.add(new ArrayList<Restaurant>());
 				
-				@Override
-				protected Void doInBackground(Void... params)
+				SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(adapter.context);
+				adapter.favorites = new HashSet<String>();
+				String[] fav_ids = pref.getString("delivery_favorites", "").split(":");
+				try
 				{
-					adapter.groups.add(adapter.context.getString(R.string.favorite));
-					adapter.children.add(new ArrayList<Restaurant>());
+					XmlPullParser parser = XmlUtility.makeInstanceFromUrl(adapter.context, new URL(DELIVERY_URL));
 					
-					SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(adapter.context);
-					adapter.favorites = new HashSet<String>();
-					String[] fav_ids = pref.getString("delivery_favorites", "").split(":");
-					try
+					int parserEvent = parser.getEventType();
+					List<Restaurant> children = null;
+					Restaurant child = null;
+					int mode = NONE;
+					String phone = "";
+					while(parserEvent != XmlPullParser.END_DOCUMENT)
 					{
-						XmlPullParser parser = XmlUtility.makeInstanceFromUrl(adapter.context, new URL(DELIVERY_URL));
-						
-						int parserEvent = parser.getEventType();
-						List<Restaurant> children = null;
-						Restaurant child = null;
-						int mode = NONE;
-						String phone = "";
-						while(parserEvent != XmlPullParser.END_DOCUMENT)
+						switch(parserEvent)
 						{
-							switch(parserEvent)
+						case XmlPullParser.START_TAG:
+							if(parser.getName().equals("category"))
 							{
-							case XmlPullParser.START_TAG:
-								if(parser.getName().equals("category"))
+								adapter.groups.add(parser.getAttributeValue(null, "name"));
+								children = new ArrayList<Restaurant>();
+								adapter.children.add(children);
+							}
+							else if(parser.getName().equals("restaurant"))
+							{
+								child = new Restaurant();
+								child.name = parser.getAttributeValue(null, "name");
+								child.id = parser.getAttributeValue(null, "id");
+								child.phone = new ArrayList<String>();
+								if(parser.getAttributeValue(null, "state").equals("NOT_IN_SERVICE"))
 								{
-									adapter.groups.add(parser.getAttributeValue(null, "name"));
-									children = new ArrayList<Restaurant>();
-									adapter.children.add(children);
+									child.state = Restaurant.NOT_IN_SERVICE;
 								}
-								else if(parser.getName().equals("restaurant"))
+								children.add(child);
+								for(String fav : fav_ids)
 								{
-									child = new Restaurant();
-									child.name = parser.getAttributeValue(null, "name");
-									child.id = parser.getAttributeValue(null, "id");
-									child.phone = new ArrayList<String>();
-									children.add(child);
-									for(String fav : fav_ids)
+									if(fav.equals(child.id))
 									{
-										if(fav.equals(child.id))
-										{
-											adapter.favorites.add(fav);
-											adapter.children.get(0).add(child);
-										}
+										adapter.favorites.add(fav);
+										adapter.children.get(0).add(child);
 									}
 								}
-								else if(parser.getName().equals("phone"))
-								{
-									mode = PHONE;
-									phone = "";
-								}
-								else if(parser.getName().equals("workingHour"))
-								{
-									mode = WORKING_HOUR;
-								}
+							}
+							else if(parser.getName().equals("phone"))
+							{
+								mode = PHONE;
+								phone = "";
+							}
+							else if(parser.getName().equals("workingHour"))
+							{
+								mode = WORKING_HOUR;
+							}
+							break;
+						case XmlPullParser.TEXT:
+							switch(mode)
+							{
+							case PHONE:
+								phone += parser.getText();
 								break;
-							case XmlPullParser.TEXT:
-								switch(mode)
+							case WORKING_HOUR:
+							{
+								String [] time = parser.getText().replaceAll(" ", "").split("-");
+								String [] hms;
+								Calendar now = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul"));
+								Calendar start = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul"));
+								Calendar end = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul"));
+								
+								hms = time[0].split(":");
+								start.set(Calendar.HOUR_OF_DAY, Integer.parseInt(hms[0]));
+								start.set(Calendar.MINUTE, Integer.parseInt(hms[1]));
+								start.set(Calendar.SECOND, 0);
+								start.set(Calendar.MILLISECOND, 0);
+								
+								hms = time[1].split(":");
+								end.set(Calendar.HOUR_OF_DAY, Integer.parseInt(hms[0]));
+								end.set(Calendar.MINUTE, Integer.parseInt(hms[1]));
+								end.set(Calendar.SECOND, 0);
+								end.set(Calendar.MILLISECOND, 0);
+								
+								if(child.state != Restaurant.NOT_IN_SERVICE)
 								{
-								case PHONE:
-									phone += parser.getText();
-									break;
-								case WORKING_HOUR:
-								{
-									String [] time = parser.getText().replaceAll(" ", "").split("-");
-									String [] hms;
-									Calendar now = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul"));
-									Calendar start = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul"));
-									Calendar end = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul"));
-									
-									hms = time[0].split(":");
-									start.set(Calendar.HOUR_OF_DAY, Integer.parseInt(hms[0]));
-									start.set(Calendar.MINUTE, Integer.parseInt(hms[1]));
-									start.set(Calendar.SECOND, 0);
-									start.set(Calendar.MILLISECOND, 0);
-									
-									hms = time[1].split(":");
-									end.set(Calendar.HOUR_OF_DAY, Integer.parseInt(hms[0]));
-									end.set(Calendar.MINUTE, Integer.parseInt(hms[1]));
-									end.set(Calendar.SECOND, 0);
-									end.set(Calendar.MILLISECOND, 0);
-									
 									Calendar end_5 = (Calendar)end.clone(), start_5 = (Calendar)start.clone();
 									end_5.add(Calendar.MINUTE, -5); start_5.add(Calendar.MINUTE, 5);
 									if(start.compareTo(end) > 0)
@@ -176,46 +173,73 @@ public class DeliveryFragment extends ExpandableListFragment
 										else
 											child.state = Restaurant.CLOSED;
 									}
-									child.start = String.format("%tR", start);
-									child.end = String.format("%tR", end);
-									break;
 								}
-								}
-								break;
-							case XmlPullParser.END_TAG:
-								if(parser.getName().equals("phone"))
-								{
-									mode = NONE;
-									child.phone.add(phone);
-								}
-								if(parser.getName().equals("workingHour"))
-								{
-									mode = NONE;
-								}
+								child.start = String.format("%tR", start);
+								child.end = String.format("%tR", end);
 								break;
 							}
-							parserEvent = parser.next();
+							}
+							break;
+						case XmlPullParser.END_TAG:
+							if(parser.getName().equals("phone"))
+							{
+								mode = NONE;
+								child.phone.add(phone);
+							}
+							if(parser.getName().equals("workingHour"))
+							{
+								mode = NONE;
+							}
+							break;
 						}
+						parserEvent = parser.next();
 					}
-					catch (IOException e)
-					{
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					catch (XmlPullParserException e)
-					{
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					return null;
 				}
-				
-				protected void onPostExecute(Void result)
+				catch (IOException e)
 				{
-					notifyDataSetChanged();
-					dlg.dismiss();
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
-			}.execute();
+				catch (XmlPullParserException e)
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				return null;
+			}
+			
+			@Override
+			protected void onPreExecute()
+			{
+				dlg = ProgressDialogFragment.newInstance(null, context.getString(R.string.loading));
+				dlg.show(context.getSupportFragmentManager(), "dialog");
+				dlg.setOnCancelListener(this);
+			}
+
+			protected void onPostExecute(Void result)
+			{
+				notifyDataSetChanged();
+				dlg.dismissAllowingStateLoss();
+			}
+
+			@Override
+			public void onCancel(DialogInterface dialog)
+			{
+				this.cancel(true);
+				Toast.makeText(getActivity(), R.string.cancelled, Toast.LENGTH_SHORT).show();
+			}
+		}
+		
+		public Adapter()
+		{
+			this.context = getActivity();
+			
+			SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
+			String [] favs = pref.getString("delivery_favorites", "").split(":");
+			for(String fav : favs)
+				favorites.add(fav);
+			
+			new AdapterTask().execute();
 		}
 
 		@Override
@@ -249,6 +273,7 @@ public class DeliveryFragment extends ExpandableListFragment
 				break;
 			case Restaurant.PREPARE:
 			case Restaurant.CLOSED:
+			case Restaurant.NOT_IN_SERVICE:
 				tv.setEnabled(false);
 				break;
 			}

@@ -13,11 +13,11 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentActivity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -25,10 +25,12 @@ import android.view.ViewGroup;
 import android.widget.BaseExpandableListAdapter;
 import android.widget.ExpandableListView;
 import android.widget.TextView;
+import android.widget.Toast;
 import kr.gwangyi.fragments.ExpandableListFragment;
 import kr.gwangyi.fragments.ProgressDialogFragment;
 import kr.gwangyi.posroid.light.R;
 import kr.gwangyi.posroid.light.activities.WelfareActivity;
+import kr.gwangyi.posroid.light.utilities.OpenAt;
 import kr.gwangyi.posroid.light.utilities.XmlUtility;
 
 public class WelfareFragment extends ExpandableListFragment
@@ -54,259 +56,203 @@ public class WelfareFragment extends ExpandableListFragment
 		private List<String> groups = new ArrayList<String>();
 		private List<List<Facility>> children = new ArrayList<List<Facility>>();
 		
+		private class AdapterTask extends AsyncTask<Void, Void, Void> implements DialogInterface.OnCancelListener
+		{
+			private ProgressDialogFragment dlg;
+			
+			private Adapter adapter = Adapter.this;
+			
+			@Override
+			protected Void doInBackground(Void... params)
+			{
+				PostechCalendarAdapter calendar = new PostechCalendarAdapter(context);
+				String url = URL;
+				Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul")); 
+				String [] schedules = calendar.scheduleOf(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).split("\n");
+				boolean check = false;
+				for(String schedule : schedules)
+				{
+					if(schedule.equals("하기방학") || schedule.equals("Summer Recess"))
+					{
+						url += "_summervacation.xml";
+						check = true;
+						break;
+					}
+					else if(schedule.equals("동기방학") || schedule.equals("Winter Recess"))
+					{
+						url += "_wintervacation.xml";
+						check = true;
+						break;
+					}
+				}
+				if(!check) url += "_nonvacation.xml";
+				
+				try
+				{
+					XmlPullParser parser = XmlUtility.makeInstanceFromUrl(adapter.context, new URL(url));
+					
+					String name = null, neut_name = null, phone = null, state_name = null;
+					OpenAt open_at = null;
+					List<Facility> children = null;
+					Facility child = null;
+					Stack<NameState> name_mode = new Stack<NameState>();
+					boolean match = false;
+					name_mode.push(NameState.NONE);
+					
+					int parserEvent = parser.getEventType();
+					while(parserEvent != XmlPullParser.END_DOCUMENT)
+					{
+						switch(parserEvent)
+						{
+						case XmlPullParser.START_TAG:
+							if(parser.getName().equals("category"))
+							{
+								name_mode.push(NameState.CATEGORY);
+								children = new ArrayList<WelfareFragment.Adapter.Facility>();
+								adapter.children.add(children);
+							}
+							else if(parser.getName().equals("facility"))
+							{
+								name_mode.push(NameState.FACILITY);
+								child = new Facility();
+								children.add(child);
+							}
+							else if(parser.getName().equals("open_at"))
+							{
+								open_at = new OpenAt(parser);
+								if(open_at.isConditionOk()) name_mode.push(NameState.STATE);
+								match = open_at.isOpened();
+								if(match)
+								{
+									child.start = open_at.getStart();
+									child.end = open_at.getEnd();
+								}
+								else if(child.start == null || child.end == null)
+								{
+									child.start = open_at.getStart();
+									child.end = open_at.getEnd();
+								}
+							}
+							else if(parser.getName().equals("name"))
+							{
+								if(name_mode.peek() != NameState.NONE)
+								{
+									String lang = parser.getAttributeValue(null, "lang");
+									if(lang != null && lang.equals(Locale.getDefault().getLanguage()))
+										name = "";
+									else if(lang == null || lang.equals("en"))
+										neut_name = "";
+								}
+							}
+							else if(parser.getName().equals("phone"))
+							{
+								phone = "";
+							}
+							break;
+						case XmlPullParser.TEXT:
+							if(name != null) name += parser.getText();
+							else if(neut_name != null) neut_name += parser.getText();
+							else if(phone != null) phone += parser.getText();
+							break;
+						case XmlPullParser.END_TAG:
+							if(parser.getName().equals("name"))
+							{
+								if(name == null) name = neut_name;
+								if(name != null && name_mode.peek() != NameState.NONE)
+								{
+									NameState state = name_mode.pop();
+									switch(state)
+									{
+									case CATEGORY:
+										groups.add(name);
+										break;
+									case FACILITY:
+										child.name = name;
+										break;
+									case STATE:
+										if(name.length() == 0) name = null;
+										state_name = name;
+										break;
+									default:
+									}
+									if(neut_name != null) name_mode.push(state);
+								}
+								name = null;
+								neut_name = null;
+							}
+							else if(parser.getName().equals("phone"))
+							{
+								child.phone = phone;
+								phone = null;
+							}
+							else if(parser.getName().equals("open_at"))
+							{
+								if(open_at != null)
+								{
+									if(state_name == null)
+										state_name = getActivity().getString(R.string.open);
+									child.detail += String.format("\n%s: %s - %s", state_name, open_at.getStart(), open_at.getEnd());
+									
+									if(match)
+										child.state = state_name;
+								}
+								state_name = null;
+								open_at = null;
+								if(name_mode.peek() == NameState.STATE) name_mode.pop();
+							}
+							else if(parser.getName().equals("facility"))
+							{
+								if(name_mode.peek() == NameState.FACILITY) name_mode.pop();
+							}
+							else if(parser.getName().equals("category"))
+							{
+								if(name_mode.peek() == NameState.CATEGORY) name_mode.pop();
+							}
+						}
+						parserEvent = parser.next();
+					}
+				}
+				catch (IOException e)
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				catch (XmlPullParserException e)
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+				return null;
+			}
+			
+			@Override
+			protected void onPreExecute()
+			{
+				dlg = ProgressDialogFragment.newInstance(null, context.getString(R.string.loading));
+				dlg.show(context.getSupportFragmentManager(), "dialog");
+				dlg.setOnCancelListener(this);
+			}
+			
+			protected void onPostExecute(Void result)
+			{
+				notifyDataSetChanged();
+				dlg.dismissAllowingStateLoss();
+			}
+
+			@Override
+			public void onCancel(DialogInterface dialog)
+			{
+				this.cancel(true);
+				Toast.makeText(getActivity(), R.string.cancelled, Toast.LENGTH_SHORT).show();
+			}
+		}
+		
 		public Adapter()
 		{
 			this.context = getActivity();
 			
-			final DialogFragment dlg = ProgressDialogFragment.newInstance(null, context.getString(R.string.loading));
-			dlg.show(context.getSupportFragmentManager(), "dialog");
-			
-			new AsyncTask<Void, Void, Void>()
-			{
-				private Adapter adapter = Adapter.this;
-				
-				@Override
-				protected Void doInBackground(Void... params)
-				{
-					PostechCalendarAdapter calendar = new PostechCalendarAdapter(context);
-					String url = URL;
-					Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul")); 
-					String [] schedules = calendar.scheduleOf(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).split("\n");
-					boolean check = false;
-					for(String schedule : schedules)
-					{
-						if(schedule.equals("하기방학") || schedule.equals("Summer Recess"))
-						{
-							url += "_summervacation.xml";
-							check = true;
-							break;
-						}
-						else if(schedule.equals("동기방학") || schedule.equals("Winter Recess"))
-						{
-							url += "_wintervacation.xml";
-							check = true;
-							break;
-						}
-					}
-					if(!check) url += "_nonvacation.xml";
-					
-					try
-					{
-						XmlPullParser parser = XmlUtility.makeInstanceFromUrl(adapter.context, new URL(url));
-						
-						String name = null, neut_name = null, phone = null, start = null, end = null, state_name = null;
-						List<Facility> children = null;
-						Facility child = null;
-						Stack<NameState> name_mode = new Stack<NameState>();
-						boolean match = false;
-						name_mode.push(NameState.NONE);
-						
-						int parserEvent = parser.getEventType();
-						while(parserEvent != XmlPullParser.END_DOCUMENT)
-						{
-							switch(parserEvent)
-							{
-							case XmlPullParser.START_TAG:
-								if(parser.getName().equals("category"))
-								{
-									name_mode.push(NameState.CATEGORY);
-									children = new ArrayList<WelfareFragment.Adapter.Facility>();
-									adapter.children.add(children);
-								}
-								else if(parser.getName().equals("facility"))
-								{
-									name_mode.push(NameState.FACILITY);
-									child = new Facility();
-									children.add(child);
-								}
-								else if(parser.getName().equals("open_at"))
-								{
-									boolean cond_ok = false;
-									String cond = parser.getAttributeValue(null, "cond"); 
-									if(cond != null)
-									{
-										if(cond.startsWith("!"))
-										{
-											cond_ok = true;
-											cond = cond.substring(1);
-										}
-										if(cond.equals("weekday"))
-										{
-											cond = "weekend";
-											cond_ok = !cond_ok;
-										}
-										if(cond.equals("weekend"))
-										{
-											if(cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY ||
-													cal.get(Calendar.DAY_OF_WEEK)== Calendar.SATURDAY)
-												cond_ok = !cond_ok;
-										}
-										else if(cond.equals("firstday"))
-										{
-											if(cal.get(Calendar.DAY_OF_MONTH) == 1)
-												cond_ok = !cond_ok;
-										}
-										else if(cond.equals("lastday"))
-										{
-											if(cal.getActualMaximum(Calendar.DAY_OF_MONTH) == cal.get(Calendar.DAY_OF_MONTH))
-												cond_ok = !cond_ok;
-										}
-										else if(cond.equals("Sun"))
-										{
-											if(cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) cond_ok = !cond_ok;
-										}
-										else if(cond.equals("Mon"))
-										{
-											if(cal.get(Calendar.DAY_OF_WEEK) == Calendar.MONDAY) cond_ok = !cond_ok;
-										}
-										else if(cond.equals("Tue"))
-										{
-											if(cal.get(Calendar.DAY_OF_WEEK) == Calendar.TUESDAY) cond_ok = !cond_ok;
-										}
-										else if(cond.equals("Wed"))
-										{
-											if(cal.get(Calendar.DAY_OF_WEEK) == Calendar.WEDNESDAY) cond_ok = !cond_ok;
-										}
-										else if(cond.equals("Thu"))
-										{
-											if(cal.get(Calendar.DAY_OF_WEEK) == Calendar.THURSDAY) cond_ok = !cond_ok;
-										}
-										else if(cond.equals("Fri"))
-										{
-											if(cal.get(Calendar.DAY_OF_WEEK) == Calendar.FRIDAY) cond_ok = !cond_ok;
-										}
-										else if(cond.equals("Sat"))
-										{
-											if(cal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY) cond_ok = !cond_ok;
-										}
-									}
-									else
-										cond_ok = true;
-									if(cond_ok)
-									{
-										start = parser.getAttributeValue(null, "start");
-										end = parser.getAttributeValue(null, "end");
-										if(start == null) start = "00:00";
-										if(end == null) end = "24:00";
-
-										String now = String.format("%tR", cal);
-										name_mode.push(NameState.STATE);
-										if(start.compareTo(now) <= 0 && end.compareTo(now) >= 0)
-										{
-											child.start = start;
-											child.end = end;
-											match = true;
-										}
-										else
-										{
-											match = false;
-											if(child.start == null || child.end == null)
-											{
-												child.start = start;
-												child.end = end;
-											}
-										}
-									}
-								}
-								else if(parser.getName().equals("name"))
-								{
-									if(name_mode.peek() != NameState.NONE)
-									{
-										String lang = parser.getAttributeValue(null, "lang");
-										if(lang.equals(Locale.getDefault().getLanguage()))
-											name = "";
-										else if(lang == null || lang.equals("en"))
-											neut_name = "";
-									}
-								}
-								else if(parser.getName().equals("phone"))
-								{
-									phone = "";
-								}
-								break;
-							case XmlPullParser.TEXT:
-								if(name != null) name += parser.getText();
-								else if(neut_name != null) neut_name += parser.getText();
-								else if(phone != null) phone += parser.getText();
-								break;
-							case XmlPullParser.END_TAG:
-								if(parser.getName().equals("name"))
-								{
-									if(name == null) name = neut_name;
-									if(name != null && name_mode.peek() != NameState.NONE)
-									{
-										NameState state = name_mode.pop();
-										switch(state)
-										{
-										case CATEGORY:
-											groups.add(name);
-											break;
-										case FACILITY:
-											child.name = name;
-											break;
-										case STATE:
-											if(name.length() == 0) name = null;
-											state_name = name;
-											break;
-										}
-										if(neut_name != null) name_mode.push(state);
-									}
-									name = null;
-									neut_name = null;
-								}
-								else if(parser.getName().equals("phone"))
-								{
-									child.phone = phone;
-									phone = null;
-								}
-								else if(parser.getName().equals("open_at"))
-								{
-									if(start != null && end != null)
-									{
-										if(state_name == null)
-											state_name = getActivity().getString(R.string.open);
-										child.detail += String.format("\n%s: %s - %s", state_name, start, end);
-										
-										if(match)
-											child.state = state_name;
-									}
-									state_name = null;
-									start = null;
-									end = null;
-									if(name_mode.peek() == NameState.STATE) name_mode.pop();
-								}
-								else if(parser.getName().equals("facility"))
-								{
-									if(name_mode.peek() == NameState.FACILITY) name_mode.pop();
-								}
-								else if(parser.getName().equals("category"))
-								{
-									if(name_mode.peek() == NameState.CATEGORY) name_mode.pop();
-								}
-							}
-							parserEvent = parser.next();
-						}
-					}
-					catch (IOException e)
-					{
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					catch (XmlPullParserException e)
-					{
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-
-					return null;
-				}
-				
-				protected void onPostExecute(Void result)
-				{
-					notifyDataSetChanged();
-					dlg.dismiss();
-				}
-			}.execute();
+			new AdapterTask().execute();
 		}
 
 		@Override
