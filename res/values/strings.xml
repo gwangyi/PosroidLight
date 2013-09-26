@@ -64,8 +64,8 @@
         <item >Academic Notice</item>
     </string-array>
     <string-array name="newsletter_default_board_values">
-        <item >131</item>
-        <item >161</item>
+        <item >79</item>
+        <item >98</item>
     </string-array>
     <string name="povis_id">POVIS ID</string>
     <string name="povis_pwd">POVIS Password</string>

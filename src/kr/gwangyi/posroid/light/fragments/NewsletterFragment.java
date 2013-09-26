@@ -4,10 +4,11 @@ import java.net.URLEncoder;
 
 import kr.gwangyi.posroid.light.R;
 import kr.gwangyi.posroid.light.utilities.PasswordManager;
+import android.annotation.SuppressLint;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Message;
+import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.view.KeyEvent;
@@ -19,17 +20,23 @@ import android.webkit.WebViewClient;
 
 public class NewsletterFragment extends Fragment implements View.OnClickListener, View.OnKeyListener
 {
-	private static final int ANNOUNCEMENT = 131, NOTICE = 161;
+	private static final int ANNOUNCEMENT = 79, NOTICE = 98;
 	private int boardId;
 	private WebView webview;
 	
-	private Handler backHandler = new Handler()
-	{
-		public void handleMessage(Message msg)
-		{
+	private Handler handler = new Handler(Looper.getMainLooper());
+	private Runnable goBack = new Runnable() {
+		@Override
+		public void run() {
 			webview.goBack();
 		}
 	};
+	
+	private static String getBoardUrl(int boardId) {
+		return "http://mpovis.postech.ac.kr/mpovis/logincheck.do?url="
+			+ URLEncoder.encode(
+				String.format("http://mbdap.postech.ac.kr/board/viewBoard.do?boardNo=%d", boardId));
+	}
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState)
@@ -46,6 +53,7 @@ public class NewsletterFragment extends Fragment implements View.OnClickListener
 		}
 	}
 	
+	@SuppressLint("SetJavaScriptEnabled")
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
 	{
@@ -71,9 +79,9 @@ public class NewsletterFragment extends Fragment implements View.OnClickListener
 						return true;
 					}
 				}
-				else if(!url.contains("/Board.do"))// 게시판도, 로그인·로그아웃도 아니면 게시판 첫 화면으로 이동시켜준다
+				else if(!url.contains("/viewBoard.do") && !url.contains("/viewPost.do") && !url.contains("/logincheck.do"))// 게시판도, 로그인·로그아웃도 아니면 게시판 첫 화면으로 이동시켜준다
 				{
-					view.loadUrl(String.format("http://mpovis.postech.ac.kr/mpovis/gw/Board.do?bid=%d&cmd=form", boardId));
+					view.loadUrl(getBoardUrl(boardId));
 					return true;
 				}
 				view.loadUrl(url);
@@ -82,7 +90,7 @@ public class NewsletterFragment extends Fragment implements View.OnClickListener
 		});
 		ret.findViewById(R.id.announcement).setOnClickListener(this);
 		ret.findViewById(R.id.notice).setOnClickListener(this);
-		webview.loadUrl(String.format("http://mpovis.postech.ac.kr/mpovis/gw/Board.do?bid=%d&cmd=form", boardId));
+		webview.loadUrl(getBoardUrl(boardId));
 		webview.setOnKeyListener(this);
 		return ret;
 	}
@@ -105,7 +113,7 @@ public class NewsletterFragment extends Fragment implements View.OnClickListener
 		if(nextBoardId != boardId)
 		{
 			boardId = nextBoardId;
-			webview.loadUrl(String.format("http://mpovis.postech.ac.kr/mpovis/gw/Board.do?bid=%d&cmd=form", boardId));
+			webview.loadUrl(getBoardUrl(boardId));
 		}
 	}
 
@@ -116,7 +124,7 @@ public class NewsletterFragment extends Fragment implements View.OnClickListener
 		{
 			if(webview.canGoBack())
 			{
-				backHandler.sendEmptyMessage(0);
+				handler.post(goBack);
 				return true;
 			}
 		}

@@ -5,7 +5,7 @@
     
     <string name="newsletter">교내회보</string>
     <string name="announcement">교내회보</string>
-    <string name="notice">학사공지</string>
+    <string name="notice">공지사항</string>
     
     <string name="calendar">학사력</string>
     <string name="calendar_title">%1$tY년 %1$tB</string>
@@ -61,11 +61,11 @@
     <string name="newsletter_default_board_summary">교내회보 기능을 열었을 때 가장 먼저 나오는 게시판을 선택합니다.</string>
     <string-array name="newsletter_default_board_entries">
         <item >교내회보</item>
-        <item >학사공지</item>
+        <item >공지사항</item>
     </string-array>
     <string-array name="newsletter_default_board_values">
-        <item >131</item>
-        <item >161</item>
+        <item >79</item>
+        <item >98</item>
     </string-array>
     <string name="povis_id">POVIS ID</string>
     <string name="povis_pwd">POVIS 비밀번호</string>
