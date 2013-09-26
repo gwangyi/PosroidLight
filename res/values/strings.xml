@@ -83,5 +83,6 @@
     <string name="tracking_off">Hide where I am</string>
     
     <string name="cancelled">Cancelled.</string>
+    <string name="new_version_found">Posroid is updated!</string>
     
 </resources>

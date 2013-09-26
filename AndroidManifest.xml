@@ -2,11 +2,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="kr.gwangyi.posroid.light"
     android:versionCode="2"
-    android:versionName="2.0" >
+    android:versionName="2.1" >
 
     <uses-sdk android:minSdkVersion="8" android:targetSdkVersion="18"/>
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.CALL_PHONE"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_MOCK_LOCATION"/>
 
     <application
         android:icon="@drawable/ic_launcher"
@@ -20,6 +22,7 @@
         <activity android:name=".activities.DeliveryActivity"></activity>
         <activity android:name=".activities.WelfareActivity"></activity>
         <activity android:name=".activities.PreferenceActivity"></activity>
+        <activity android:name=".activities.DiscountActivity"></activity>
     </application>
 
 </manifest>

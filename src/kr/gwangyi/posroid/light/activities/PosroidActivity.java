@@ -4,9 +4,15 @@ import kr.gwangyi.activities.FragmentTabActivity;
 import kr.gwangyi.posroid.light.R;
 import kr.gwangyi.posroid.light.fragments.CafeteriaFragment;
 import kr.gwangyi.posroid.light.fragments.DeliveryFragment;
+import kr.gwangyi.posroid.light.fragments.DiscountFragment;
 import kr.gwangyi.posroid.light.fragments.NewsletterFragment;
 import kr.gwangyi.posroid.light.fragments.PostechCalendarFragment;
 import kr.gwangyi.posroid.light.fragments.WelfareFragment;
+import kr.gwangyi.posroid.light.utilities.VersionChecker;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -25,6 +31,22 @@ public class PosroidActivity extends FragmentTabActivity
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 	    super.onCreate(savedInstanceState);
+	    // 버전체크
+	    new VersionChecker(this) {
+
+			@Override
+			protected void doVersionCheck(String latest) {
+				if(latest != null && latest.compareTo(getCurrentVersion()) > 0) {
+					Context context = getApplicationContext();
+					NotificationManager manager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+					Notification notification = new Notification(R.drawable.arrow_icon, getString(R.string.new_version_found), System.currentTimeMillis());
+					Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=kr.gwangyi.nposroid"));
+					PendingIntent pi = PendingIntent.getActivity(context, 0, intent, 0);
+					notification.setLatestEventInfo(context, getString(R.string.app_name), getString(R.string.new_version_found), pi);
+					manager.notify(0, notification);
+				}
+			}
+	    }.execute();
 
 	    setContentView(R.layout.main);
 	    tabhost = getTabHost();
@@ -43,6 +65,8 @@ public class PosroidActivity extends FragmentTabActivity
 	    		DeliveryFragment.class, null);
 	    man.addTab(tabhost.newTabSpec("welfare").setIndicator(getString(R.string.welfare)),
 	    		WelfareFragment.class, null);
+	    man.addTab(tabhost.newTabSpec("discount").setIndicator(getString(R.string.discount)),
+	    		DiscountFragment.class, null);
 	    
 	    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
 	    try

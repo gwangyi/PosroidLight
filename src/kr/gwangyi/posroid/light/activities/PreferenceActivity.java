@@ -1,13 +1,11 @@
 package kr.gwangyi.posroid.light.activities;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileFilter;
-import java.io.InputStreamReader;
-import java.net.URL;
 
 import kr.gwangyi.posroid.light.R;
 import kr.gwangyi.posroid.light.utilities.PasswordManager;
+import kr.gwangyi.posroid.light.utilities.VersionChecker;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -51,24 +49,31 @@ public class PreferenceActivity extends android.preference.PreferenceActivity im
 			}
 		});
 	    
-	    Preference version = findPreference("latest");
-    	version.setSummary(getString(R.string.current_version) + "2.0.0");
-	    try
-	    {
-		    String latest;
-	    	URL url = new URL("http://posroid.gwangyi.kr:8799/version.txt");
-	    	BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
-	    	latest = in.readLine();
-	    	if(latest.compareTo("2.0.0") > 0)
-	    	{
-	    		version.setOnPreferenceClickListener(this);
-	    	}
-	    	version.setTitle(getString(R.string.latest) + latest);
-	    }
-	    catch (Exception e)
-	    {
-	    	version.setTitle(getString(R.string.latest) + "?");
-	    }
+	    new VersionChecker(this) {
+		    private Preference version;
+		    
+    		{
+    			version = findPreference("latest");
+    	    	version.setSummary(getString(R.string.current_version) + getCurrentVersion());
+    		}
+
+    		@Override
+			protected void doVersionCheck(String latest) {
+				if(latest != null)
+				{
+			    	if(latest.compareTo(getCurrentVersion()) > 0)
+			    	{
+			    		version.setOnPreferenceClickListener(PreferenceActivity.this);
+			    	}
+			    	version.setTitle(getString(R.string.latest) + latest);
+				}
+				else
+				{
+			    	version.setTitle(getString(R.string.latest) + "?");
+				}
+			}
+		}.execute();
+
 	    Preference about = findPreference("about");
 	    about.setOnPreferenceClickListener(this);
 	    Preference clear = findPreference("clear");

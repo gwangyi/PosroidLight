@@ -83,5 +83,6 @@
     <string name="tracking_off">내 위치 숨기기</string>
     
     <string name="cancelled">취소되었습니다.</string>
+    <string name="new_version_found">포스로이드 새버전이 나왔습니다!</string>
 
 </resources>
