@@ -29,10 +29,10 @@ public class CalendarFragment extends Fragment
 	
 	private CalendarAdapter schedule;
 	
-	private class Adapter extends PagerAdapter // Fragment ¾È¿¡¼­´Â Fragment¸¦ ¶Ç ¸¸µé ¼ö ¾ø´Ù. ±×·¡¼­ PageAdapter·Î ±¸Çö
+	private class Adapter extends PagerAdapter // Fragment ì•ˆì—ì„œëŠ” Fragmentë¥¼ ë˜ ë§Œë“¤ ìˆ˜ ì—†ë‹¤. ê·¸ë˜ì„œ PageAdapterë¡œ êµ¬í˜„
 	{
 		@Override
-		public Object instantiateItem(ViewGroup container, int position) // View¸¦ Ã³À½ ¸¸µé¶§¸¸ È£ÃâµÊ. updateÇÒ¶§´Â È£Ãâ ¾ÈµÊ!
+		public Object instantiateItem(ViewGroup container, int position) // Viewë¥¼ ì²˜ìŒ ë§Œë“¤ë•Œë§Œ í˜¸ì¶œë¨. updateí• ë•ŒëŠ” í˜¸ì¶œ ì•ˆë¨!
 		{
 			LayoutInflater inflater = (LayoutInflater)container.getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 			View view = inflater.inflate(R.layout.calendar_month, container, false);
@@ -60,7 +60,7 @@ public class CalendarFragment extends Fragment
 					tv.setTextColor(Color.rgb(160, 128, 255));
 					break;
 				}
-				tv.setLayoutParams(new TableRow.LayoutParams(0, TableRow.LayoutParams.WRAP_CONTENT, 1.0f)); // 1.0f ¿¡ Á¶½É. float¸¦ ³Ñ°ÜÁà¾ßÇÔ
+				tv.setLayoutParams(new TableRow.LayoutParams(0, TableRow.LayoutParams.WRAP_CONTENT, 1.0f)); // 1.0f ì— ì¡°ì‹¬. floatë¥¼ ë„˜ê²¨ì¤˜ì•¼í•¨
 				row.addView(tv);
 				cal.roll(Calendar.DAY_OF_WEEK, true);
 			} while(cal.get(Calendar.DAY_OF_WEEK) != firstday);

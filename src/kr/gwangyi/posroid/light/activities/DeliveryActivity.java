@@ -88,7 +88,7 @@ public class DeliveryActivity extends FragmentActivity
 							{
 								child = new Item();
 								child.name = parser.getAttributeValue(null, "name").replaceAll("\\s*\\[[0-9]*\\]$", "");
-								child.note = String.format("£Ü%s (%s/%s)", parser.getAttributeValue(null, "price"),
+								child.note = String.format("ï¿¦%s (%s/%s)", parser.getAttributeValue(null, "price"),
 										parser.getAttributeValue(null, "good"), parser.getAttributeValue(null, "bad"));
 								children.add(child);
 							}

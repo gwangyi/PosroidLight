@@ -31,7 +31,7 @@ public class PosroidActivity extends FragmentTabActivity
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 	    super.onCreate(savedInstanceState);
-	    // ¹öÀüÃ¼Å©
+	    // ë²„ì „ì²´í¬
 	    new VersionChecker(this) {
 
 			@Override

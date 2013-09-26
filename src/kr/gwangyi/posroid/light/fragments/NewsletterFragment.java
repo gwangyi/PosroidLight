@@ -65,7 +65,7 @@ public class NewsletterFragment extends Fragment implements View.OnClickListener
 			@Override
 			public boolean shouldOverrideUrlLoading(WebView view, String url)
 			{
-				if(url.contains("login.do?")) // ·Î±×ÀÎ Ã¢ÀÌ ¶ß¸é ÀúÀåµÈ id/pw·Î ·Î±×ÀÎ ½Ãµµ
+				if(url.contains("login.do?")) // ë¡œê·¸ì¸ ì°½ì´ ëœ¨ë©´ ì €ì¥ëœ id/pwë¡œ ë¡œê·¸ì¸ ì‹œë„
 				{
 					SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(view.getContext());
 					String id = pref.getString("povis_id", ""), pass = pref.getString("povis_pwd", "");
@@ -79,7 +79,7 @@ public class NewsletterFragment extends Fragment implements View.OnClickListener
 						return true;
 					}
 				}
-				else if(!url.contains("/viewBoard.do") && !url.contains("/viewPost.do") && !url.contains("/logincheck.do"))// °Ô½ÃÆÇµµ, ·Î±×ÀÎ¡¤·Î±×¾Æ¿ôµµ ¾Æ´Ï¸é °Ô½ÃÆÇ Ã¹ È­¸éÀ¸·Î ÀÌµ¿½ÃÄÑÁØ´Ù
+				else if(!url.contains("/viewBoard.do") && !url.contains("/viewPost.do") && !url.contains("/logincheck.do"))// ê²Œì‹œíŒë„, ë¡œê·¸ì¸Â·ë¡œê·¸ì•„ì›ƒë„ ì•„ë‹ˆë©´ ê²Œì‹œíŒ ì²« í™”ë©´ìœ¼ë¡œ ì´ë™ì‹œì¼œì¤€ë‹¤
 				{
 					view.loadUrl(getBoardUrl(boardId));
 					return true;

@@ -72,13 +72,13 @@ public class WelfareFragment extends ExpandableListFragment
 				boolean check = false;
 				for(String schedule : schedules)
 				{
-					if(schedule.equals("ÇÏ±â¹æÇĞ") || schedule.equals("Summer Recess"))
+					if(schedule.equals("í•˜ê¸°ë°©í•™") || schedule.equals("Summer Recess"))
 					{
 						url += "_summervacation.xml";
 						check = true;
 						break;
 					}
-					else if(schedule.equals("µ¿±â¹æÇĞ") || schedule.equals("Winter Recess"))
+					else if(schedule.equals("ë™ê¸°ë°©í•™") || schedule.equals("Winter Recess"))
 					{
 						url += "_wintervacation.xml";
 						check = true;
